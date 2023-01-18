@@ -13,11 +13,14 @@
 	onMount(() => {
 		let prevTodos = localStorage.getItem(SVELTE_TODOS);
 		if (prevTodos) {
-			storeTodos.update(JSON.parse(prevTodos));
+            let parsedTodos = JSON.parse(prevTodos) || [];
+            storeTodos.reset();
+			storeTodos.update(() => parsedTodos);
 		}
 	});
 
 	let newTodo = '';
+
 	function addTodo(e: any) {
 		e.preventDefault();
 		let todo: Todo = {
@@ -49,12 +52,17 @@
 	}
 
     function handleClickDelete(id: string){
-        storeTodos.update((todos: Todo[]) => {
-            return todos.filter((todo: Todo) => {
-                return todo.id !== id;
+        if(!id) return;
+        let delEl = document.getElementById(`${id}-todo`);
+        delEl?.classList.toggle('delete-animation');
+        setTimeout(() => {
+            storeTodos.update((todos: Todo[]) => {
+                return todos.filter((todo: Todo) => {
+                    return todo.id !== id;
+                });
             });
-        });
-        updateLocalStorage();
+            updateLocalStorage();
+        }, 500);
     }
 
 	onDestroy(unsubscribe);
@@ -70,14 +78,14 @@
 	</form>
 	<div class="todoList">
 		{#each todos as todo}
-			<div class="todo">
+			<div class="todo" id={`${todo.id}-todo`}>
 				<input
 					id={todo.id}
 					type="checkbox"
 					on:change={handleCheckboxChange}
 					bind:checked={todo.isDone}
 				/>
-				<span>{todo.todo}</span>
+				<span style={`text-decoration: ${todo.isDone ? "line-through" : "none"}`}>{todo.todo}</span>
                 <span on:click={() => handleClickDelete(todo.id)}>x</span>
 			</div>
 		{/each}
@@ -168,4 +176,17 @@
 		justify-content: center;
 		align-items: center;
 	}
+    .delete-animation {
+        animation: delete 0.2s ease-in-out;
+    }
+    @keyframes delete{
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
 </style>
